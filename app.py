@@ -7,10 +7,9 @@ import os
 import io
 import re
 import json
-import math
 import tempfile
 from typing import List, Dict, Tuple, Any
-from collections import Counter, defaultdict
+from collections import defaultdict
 from datetime import datetime
 
 import streamlit as st
@@ -18,20 +17,14 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 # File extraction
 import docx
 import pdfplumber
 
-# NLP & HF
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-
 # ---------------------
-# Configuration & Lexica
+# Configuration
 # ---------------------
-DEFAULT_HF_MODEL = "j-hartmann/emotion-english-roberta-large"
 
 # Color schemes for better UX
 COLOR_SCHEME = {
@@ -116,7 +109,8 @@ def extract_text_from_txt_bytes(b: bytes) -> str:
 
 def extract_text_from_docx_bytes(b: bytes) -> str:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as f:
-        f.write(b); f.flush()
+        f.write(b)
+        f.flush()
         tmp = f.name
     try:
         doc = docx.Document(tmp)
@@ -131,7 +125,8 @@ def extract_text_from_docx_bytes(b: bytes) -> str:
 
 def extract_text_from_pdf_bytes(b: bytes) -> str:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as f:
-        f.write(b); f.flush()
+        f.write(b)
+        f.flush()
         tmp = f.name
     try:
         text_pages = []
@@ -195,7 +190,7 @@ def heuristic_ct_scores(text: str) -> Tuple[Dict[str, float], Dict[str, str], Di
     # Get highlighted sentences
     highlighted = highlight_ct_sentences(text)
     
-    # Calculate scores (same as before)
+    # Calculate scores
     clarity_indicators = ["for example", "for instance", "e.g.", "such as", "to illustrate"]
     clarity_score = 1.0 if any(phrase in text.lower() for phrase in clarity_indicators) else (0.3 if word_count < 50 else 0.5)
     scores["Clarity"] = clarity_score
@@ -302,21 +297,6 @@ def create_comparison_bar_chart(ct_scores: Dict[str, float], student_name: str) 
     
     return fig
 
-# ---------------------
-# Transformer Model (cached) - Keeping for potential future use
-# ---------------------
-@st.cache_resource
-def load_transformer(model_name: str):
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.to(device)
-        return {"tok": tokenizer, "model": model, "device": device}
-    except Exception as e:
-        st.error(f"Failed to load model '{model_name}': {e}")
-        raise
-
 def safe_extract_all_files(files) -> List[Dict[str, Any]]:
     out = []
     for f in files:
@@ -409,15 +389,14 @@ def main():
         st.markdown("---")
         st.subheader("⚙️ Analysis Settings")
         
-        # Model settings in expander - simplified since emotion analysis removed
+        # Simplified configuration
         with st.expander("Advanced Configuration", expanded=False):
             batch_size = st.number_input("Processing batch size", value=8, min_value=1, max_value=64)
         
         # System info
         st.markdown("---")
         st.subheader("💻 System Info")
-        device_status = "✅ GPU Available" if torch.cuda.is_available() else "ℹ️ CPU Mode"
-        st.write(f"**Device:** {device_status}")
+        st.write(f"**Status:** ✅ Ready for Analysis")
         
         # Run button with prominent styling
         st.markdown("---")
@@ -493,7 +472,7 @@ def main():
             # Dashboard with key metrics and visualizations
             st.subheader("Executive Summary")
             
-            # Key metrics - removed emotion-related metrics
+            # Key metrics
             col1, col2, col3 = st.columns(3)
             with col1:
                 avg_ct = np.mean([np.mean(list(s.values())) for s in ct_scores_all])
@@ -505,7 +484,7 @@ def main():
                 high_ct = sum(1 for scores in ct_scores_all if np.mean(list(scores.values())) > 0.7)
                 st.metric("High CT Scores", f"{high_ct}/{len(submissions)}")
             
-            # Visualizations - removed emotion charts
+            # Visualizations
             st.markdown("#### 📊 CT Scores Overview")
             fig = create_ct_heatmap(ct_scores_all, [s["filename"] for s in submissions])
             st.plotly_chart(fig, use_container_width=True)
@@ -560,10 +539,15 @@ def main():
                         
                         # Feedback suggestions
                         st.markdown("#### 💡 Feedback Suggestions")
+                        suggestion_count = 0
                         for standard, suggestion in ct_suggest.items():
                             score = ct_scores.get(standard, 0)
                             if score < 0.6:
                                 st.info(f"**{standard}:** {suggestion}")
+                                suggestion_count += 1
+                        
+                        if suggestion_count == 0:
+                            st.success("🎉 Great job! No major improvement areas identified.")
         
         with tab3:
             # Export section
@@ -673,12 +657,8 @@ def main():
         
         with col2:
             st.subheader("🎯 CT Standards Covered")
-            for standard in list(PAUL_CT_RUBRIC.keys())[:5]:
+            for standard in list(PAUL_CT_RUBRIC.keys()):
                 st.markdown(f"✅ **{standard}**")
-            if len(PAUL_CT_RUBRIC) > 5:
-                with st.expander("See all standards"):
-                    for standard in list(PAUL_CT_RUBRIC.keys())[5:]:
-                        st.markdown(f"✅ **{standard}**")
 
 # Run the app
 if __name__ == "__main__":
