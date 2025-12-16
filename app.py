@@ -3,24 +3,24 @@ CT Learner Pro - Enhanced UX with Data Analytics & Sentence Highlighting
 Single-file Streamlit app with improved HCI principles.
 """
 
-import os
-import io
-import re
-import json
-import tempfile
-from typing import List, Dict, Tuple, Any
-from collections import defaultdict
-from datetime import datetime
+#import os
+#import io
+#import re
+#import json
+#import tempfile
+#from typing import List, Dict, Tuple, Any
+#from collections import defaultdict
+#from datetime import datetime
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
+#import streamlit as st
+#import pandas as pd
+#import numpy as np
+#import plotly.express as px
+#import plotly.graph_objects as go
 
 # File extraction
-import docx
-import pdfplumber
+#import docx
+#import pdfplumber
 
 # ---------------------
 # Configuration
